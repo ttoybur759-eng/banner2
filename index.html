@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ইলেকশন ব্যানার জেনারেটর (রিয়েলিস্টিক)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+    body {
+      background: linear-gradient(135deg, #0c1e2f, #1e3a5f);
+      color: white;
+      padding: 20px;
+    }
+    .container { max-width: 1300px; margin: 0 auto; }
+    h1 { text-align: center; margin-bottom: 25px; font-size: 2.8rem; text-shadow: 0 0 20px #ffcc00; }
+    
+    .upload-area {
+      border: 4px dashed #ffcc00;
+      border-radius: 15px;
+      padding: 50px 20px;
+      text-align: center;
+      cursor: pointer;
+      background: rgba(255,204,0,0.1);
+      margin-bottom: 25px;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+      background: rgba(255,255,255,0.1);
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+    }
+    input, select, button { padding: 12px; border-radius: 8px; font-size: 1.05rem; }
+    input, select { background: #112233; color: white; border: 1px solid #ffcc00; }
+    button {
+      background: #e30613;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover { background: #ff1a2b; }
+
+    .banners-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 25px;
+    }
+    .banner-container { background: #0a1a2f; padding: 15px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+    canvas { width: 100%; border: 3px solid #ffcc00; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🗳️ রিয়েলিস্টিক ইলেকশন ব্যানার জেনারেটর</h1>
+    
+    <div class="upload-area" id="uploadArea">
+      <h2>প্রার্থীর ছবি আপলোড করুন</h2>
+      <p>ক্লিক করুন অথবা ড্র্যাগ করে দিন</p>
+      <input type="file" id="imageInput" accept="image/*" hidden>
+    </div>
+
+    <div class="controls">
+      <div><label>প্রার্থীর নাম</label><br><input type="text" id="name" value="আব্দুর রহিম"></div>
+      <div><label>পদবী</label><br><input type="text" id="position" value="চেয়ারম্যান প্রার্থী"></div>
+      <div><label>এলাকা</label><br><input type="text" id="area" value="মির্জাপুর ইউনিয়ন"></div>
+      <div><label>দল/প্রতীক</label><br><input type="text" id="party" value="নৌকা মার্কা"></div>
+      <div><button onclick="generateBanners()">ব্যানার তৈরি করুন</button></div>
+    </div>
+
+    <div class="banners-grid" id="bannersGrid"></div>
+  </div>
+
+  <script>
+    let uploadedImage = null;
+
+    document.getElementById('uploadArea').addEventListener('click', () => document.getElementById('imageInput').click());
+    document.getElementById('imageInput').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const img = new Image();
+        img.onload = () => { uploadedImage = img; alert('✅ ছবি আপলোড সফল!'); };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function createBanner(width, height, title) {
+      const div = document.createElement('div');
+      div.className = 'banner-container';
+      const h3 = document.createElement('h3');
+      h3.textContent = title;
+      h3.style.textAlign = 'center';
+      h3.style.marginBottom = '10px';
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      div.append(h3, canvas);
+      return {div, canvas};
+    }
+
+    function drawElectionBanner(canvas, name, position, area, party) {
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width, h = canvas.height;
+
+      // Background Gradient + Border
+      const grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, '#003087');
+      grad.addColorStop(1, '#0066cc');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 18;
+      ctx.strokeRect(12, 12, w-24, h-24);
+
+      // Top Green Bar
+      ctx.fillStyle = '#008000';
+      ctx.fillRect(0, 0, w, 65);
+
+      // Candidate Photo
+      if (uploadedImage) {
+        ctx.save();
+        const imgW = w * 0.48;
+        const imgH = h * 0.58;
+        const x = w * 0.52;
+        const y = 85;
+        
+        ctx.shadowColor = 'black';
+        ctx.shadowBlur = 25;
+        ctx.shadowOffsetX = 8;
+        ctx.shadowOffsetY = 8;
+        ctx.drawImage(uploadedImage, x, y, imgW, imgH);
+        ctx.restore();
+      }
+
+      // Text Layers
+      ctx.textAlign = 'center';
+      ctx.shadowColor = 'black';
+      ctx.shadowBlur = 8;
+
+      // Top Party Name
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 42px Arial';
+      ctx.fillText("বাংলাদেশ আওয়ামী লীগ", w/2, 48);
+
+      // Big Name
+      ctx.fillStyle = '#ffeb3b';
+      ctx.font = 'bold 58px Arial';
+      ctx.fillText(name, w/2, h * 0.78);
+
+      // Position
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 36px Arial';
+      ctx.fillText(position, w/2, h * 0.86);
+
+      // Area
+      ctx.font = 'bold 32px Arial';
+      ctx.fillText(area, w/2, h * 0.93);
+
+      // Symbol / Party
+      ctx.fillStyle = '#ffd700';
+      ctx.font = 'bold 45px Arial';
+      ctx.fillText(party, w/2, h - 35);
+
+      // Bottom Red Bar
+      ctx.fillStyle = '#e30613';
+      ctx.fillRect(0, h-55, w, 55);
+      
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 26px Arial';
+      ctx.fillText("ভোট দিন • জয়ী করুন", w/2, h - 25);
+    }
+
+    function generateBanners() {
+      if (!uploadedImage) {
+        alert("প্রথমে প্রার্থীর ছবি আপলোড করুন!");
+        return;
+      }
+
+      const name = document.getElementById('name').value || "প্রার্থী";
+      const position = document.getElementById('position').value || "চেয়ারম্যান";
+      const area = document.getElementById('area').value || "ইউনিয়ন";
+      const party = document.getElementById('party').value || "নৌকা মার্কা";
+
+      const grid = document.getElementById('bannersGrid');
+      grid.innerHTML = '';
+
+      // ১. বড় ভার্টিক্যাল ব্যানার
+      let b1 = createBanner(600, 850, "বড় ভার্টিক্যাল ব্যানার");
+      drawElectionBanner(b1.canvas, name, position, area, party);
+      grid.appendChild(b1.div);
+
+      // ২. হরাইজন্টাল ব্যানার
+      let b2 = createBanner(900, 450, "হরাইজন্টাল ব্যানার");
+      drawElectionBanner(b2.canvas, name, position, area, party);
+      grid.appendChild(b2.div);
+
+      // ৩. সোশ্যাল মিডিয়া পোস্টার
+      let b3 = createBanner(600, 600, "ফেসবুক/ইনস্টাগ্রাম পোস্ট");
+      drawElectionBanner(b3.canvas, name, position, area, party);
+      grid.appendChild(b3.div);
+    }
+  </script>
+</body>
+</html>
